@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手機旗艦對戰 · Phone Flagship Battle</title>
+<style>
+  :root{
+    --ink:#eaf0ff;
+    --muted:#8b93a7;
+    --panel:rgba(255,255,255,.045);
+    --line:rgba(255,255,255,.10);
+    --accent:#5b86f7;
+    --win:#27e6a0;
+    --gold:#ffd24a;
+    --radius:18px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang TC","Noto Sans TC","Microsoft JhengHei",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh;
+    background:#070810;position:relative;overflow-x:hidden;
+  }
+  /* 動態背景光暈 */
+  body::before{
+    content:"";position:fixed;inset:-20%;z-index:-2;
+    background:
+      radial-gradient(40% 35% at 20% 15%, rgba(91,134,247,.22), transparent 60%),
+      radial-gradient(40% 35% at 82% 25%, rgba(231,39,123,.18), transparent 60%),
+      radial-gradient(50% 45% at 50% 95%, rgba(39,230,160,.12), transparent 60%);
+    filter:blur(10px);animation:drift 18s ease-in-out infinite alternate;
+  }
+  body::after{
+    content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+    background:radial-gradient(120% 120% at 50% 0%, transparent 55%, rgba(0,0,0,.55));
+  }
+  @keyframes drift{0%{transform:translate(-2%,-1%) scale(1)}100%{transform:translate(2%,2%) scale(1.08)}}
+
+  #fx{position:fixed;inset:0;z-index:60;pointer-events:none}
+
+  .wrap{max-width:980px;margin:0 auto;padding:26px 16px 70px;position:relative}
+  .wrap.shake{animation:shake .5s cubic-bezier(.36,.07,.19,.97)}
+  @keyframes shake{
+    10%,90%{transform:translate(-2px,1px)} 20%,80%{transform:translate(4px,-2px)}
+    30%,50%,70%{transform:translate(-7px,2px)} 40%,60%{transform:translate(7px,-1px)}
+  }
+
+  header{text-align:center;margin-bottom:14px}
+  header h1{
+    font-size:clamp(24px,5.5vw,36px);margin:0 0 4px;letter-spacing:1px;font-weight:900;
+    background:linear-gradient(90deg,#5b86f7,#27e6a0,#ffd24a,#e7277b,#5b86f7);
+    background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;
+    animation:hue 8s linear infinite;
+  }
+  @keyframes hue{to{background-position:300% 0}}
+  header p{margin:0;color:var(--muted);font-size:13.5px}
+
+  .controls{display:flex;justify-content:center;gap:10px;margin:18px 0 22px;flex-wrap:wrap}
+  button{font-family:inherit;font-size:15px;cursor:pointer;border:none;border-radius:999px;
+    padding:11px 24px;font-weight:700;transition:transform .08s ease, box-shadow .2s ease, filter .2s ease}
+  button:active{transform:translateY(1px) scale(.98)}
+  .btn-primary{
+    background:linear-gradient(90deg,#5b86f7,#7a5cf0);color:#fff;
+    box-shadow:0 0 18px rgba(91,134,247,.55),0 4px 14px rgba(0,0,0,.4);
+  }
+  .btn-primary:hover{filter:brightness(1.1);box-shadow:0 0 28px rgba(91,134,247,.8)}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;filter:none}
+  .btn-ghost{background:rgba(255,255,255,.05);color:var(--muted);border:1px solid var(--line)}
+  .btn-ghost:hover{color:var(--ink);border-color:var(--accent);box-shadow:0 0 14px rgba(91,134,247,.3)}
+
+  .arena{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:start}
+  @media (max-width:700px){
+    .arena{grid-template-columns:1fr;gap:12px}
+    .vs{order:2;margin:0 auto}
+    .side-b{order:3}
+  }
+  .vs{align-self:center;font-weight:900;font-size:16px;color:#fff;
+    width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#e7277b,#7a5cf0);box-shadow:0 0 22px rgba(231,39,123,.6);letter-spacing:1px}
+
+  .side{display:flex;flex-direction:column;gap:10px}
+  select{width:100%;font-family:inherit;font-size:15px;padding:11px 12px;border-radius:12px;
+    border:1px solid var(--line);background:#11131c;color:var(--ink);appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%238b93a7' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat:no-repeat;background-position:right 12px center}
+  select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,134,247,.25)}
+  .pick-row{display:flex;gap:8px;align-items:center}
+  .dice{flex:0 0 auto;padding:11px 14px;font-size:16px;background:#11131c;border:1px solid var(--line);border-radius:12px;color:var(--ink)}
+  .dice:hover{border-color:var(--accent);box-shadow:0 0 14px rgba(91,134,247,.3)}
+
+  .card{position:relative;background:var(--panel);border-radius:var(--radius);overflow:hidden;
+    border:1px solid var(--line);min-height:120px;backdrop-filter:blur(8px);
+    box-shadow:0 10px 30px rgba(0,0,0,.45);transition:transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s ease, filter .35s ease}
+  .card.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;min-height:250px}
+  .card.glow-on{box-shadow:0 0 0 1px var(--bc,#5b86f7), 0 0 34px var(--bcg,rgba(91,134,247,.4)), 0 10px 30px rgba(0,0,0,.5)}
+  .card-top{padding:16px 16px 13px;color:#fff;position:relative;overflow:hidden}
+  .card-top::after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18),transparent 55%);pointer-events:none}
+  .card-brand{font-size:12px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;opacity:.92}
+  .card-model{font-size:20px;font-weight:900;margin-top:2px;line-height:1.2}
+  .card-year{position:absolute;top:14px;right:16px;font-size:13px;font-weight:800;background:rgba(0,0,0,.28);padding:3px 11px;border-radius:999px}
+  .card-body{padding:15px 16px 18px}
+
+  .stat{margin-bottom:12px}
+  .stat:last-child{margin-bottom:0}
+  .stat-head{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;margin-bottom:5px}
+  .stat-name{color:var(--muted);font-weight:700}
+  .stat-val{font-weight:900;font-variant-numeric:tabular-nums;transition:color .3s ease, transform .3s ease}
+  .bar{height:9px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden;position:relative}
+  .bar > i{display:block;height:100%;width:0;border-radius:999px;
+    background:linear-gradient(90deg,var(--bc,#5b86f7),color-mix(in srgb,var(--bc,#5b86f7) 40%,#fff));
+    box-shadow:0 0 12px var(--bcg,rgba(91,134,247,.5));
+    transition:width .65s cubic-bezier(.22,1,.36,1), background .3s ease, box-shadow .3s ease}
+  .stat.win .bar > i{background:linear-gradient(90deg,#1faa6e,var(--win));box-shadow:0 0 16px rgba(39,230,160,.8)}
+  .stat.win .stat-val{color:var(--win);transform:scale(1.18)}
+  .stat.win .stat-name::after{content:" ▲";color:var(--win);font-size:10px}
+  .stat.pop{animation:pop .45s ease}
+  @keyframes pop{0%{transform:translateX(0)}30%{transform:translateX(3px) scale(1.01)}100%{transform:translateX(0)}}
+  .spec{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+
+  .total{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:baseline}
+  .total-label{font-size:13px;color:var(--muted);font-weight:700}
+  .total-num{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+  .total-num .denom{font-size:14px;color:var(--muted);font-weight:700}
+
+  .card.is-winner{transform:translateY(-6px) scale(1.015)}
+  .card.is-winner .total-num .tnum{color:var(--gold);text-shadow:0 0 18px rgba(255,210,74,.7)}
+  .card.is-loser{filter:grayscale(.55) brightness(.78);transform:rotate(-.6deg) translateY(2px)}
+  .crown{position:absolute;top:-14px;left:50%;transform:translateX(-50%) scale(0);font-size:30px;
+    filter:drop-shadow(0 0 10px rgba(255,210,74,.8));transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
+  .card.is-winner .crown{transform:translateX(-50%) scale(1)}
+  /* 勝利印章 */
+  .stamp{position:absolute;top:50%;left:50%;width:clamp(120px,40%,190px);aspect-ratio:1;z-index:5;
+    transform:translate(-50%,-50%) scale(2.4) rotate(-22deg);opacity:0;pointer-events:none;
+    display:flex;align-items:center;justify-content:center;border-radius:22px;
+    border:7px solid #ee2b2b;background:rgba(230,40,40,.16);color:#ff5a5a;
+    font-size:clamp(70px,17vw,130px);font-weight:900;line-height:1;
+    box-shadow:0 0 34px rgba(255,50,50,.6),inset 0 0 26px rgba(255,60,60,.35);
+    text-shadow:0 0 18px rgba(255,90,90,.75)}
+  .card.is-winner .stamp{animation:stampIn .5s cubic-bezier(.34,1.56,.64,1) .12s both}
+  @keyframes stampIn{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(2.4) rotate(-24deg)}
+    60%{opacity:1;transform:translate(-50%,-50%) scale(.9) rotate(-9deg)}
+    100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-12deg)}}
+
+  .verdict{text-align:center;margin:24px auto 0;max-width:560px;min-height:34px;
+    font-size:clamp(18px,4.5vw,24px);font-weight:900;opacity:0;transform:scale(.8);
+    transition:opacity .35s ease, transform .45s cubic-bezier(.34,1.56,.64,1)}
+  .verdict.show{opacity:1;transform:scale(1)}
+  .verdict .sub{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-top:5px}
+
+  /* 衝撞特效 */
+  #clash{position:fixed;inset:0;z-index:55;display:none;align-items:center;justify-content:center;pointer-events:none}
+  #clash.go{display:flex}
+  #clash .flash{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.95),rgba(255,225,150,.4) 30%,transparent 55%);opacity:0}
+  #clash.go .flash{animation:flash .55s ease .82s both}
+  @keyframes flash{0%{opacity:0}20%{opacity:1}100%{opacity:0}}
+  /* 衝擊波環 */
+  #clash .shock{position:absolute;width:40px;height:40px;border-radius:50%;border:6px solid rgba(255,235,170,.9);opacity:0;box-shadow:0 0 40px rgba(255,210,90,.8)}
+  #clash.go .shock{animation:shock .8s cubic-bezier(.15,.6,.3,1) .82s both}
+  @keyframes shock{0%{opacity:.95;transform:scale(.2)}100%{opacity:0;transform:scale(26)}}
+  /* 雙劍飛入 */
+  #clash .sword{position:absolute;font-size:clamp(100px,24vw,240px);opacity:0;filter:drop-shadow(0 0 22px rgba(130,185,255,.85))}
+  #clash.go .swordL{animation:flyL .85s cubic-bezier(.5,0,.35,1) both}
+  #clash.go .swordR{animation:flyR .85s cubic-bezier(.5,0,.35,1) both}
+  @keyframes flyL{0%{opacity:0;transform:translateX(-95vw) rotate(-65deg) scale(.55)}55%{opacity:1}100%{opacity:1;transform:translateX(-7vw) rotate(22deg) scale(1.15)}}
+  @keyframes flyR{0%{opacity:0;transform:translateX(95vw) rotate(65deg) scale(.55) scaleX(-1)}55%{opacity:1}100%{opacity:1;transform:translateX(7vw) rotate(22deg) scale(1.15) scaleX(-1)}}
+  /* 交擊 ⚔️ 爆發 */
+  #clash .cross{position:absolute;font-size:clamp(120px,30vw,300px);opacity:0;filter:drop-shadow(0 0 34px rgba(255,220,120,.95))}
+  #clash.go .cross{animation:crossPop .95s ease .82s both}
+  @keyframes crossPop{0%{opacity:0;transform:scale(.2) rotate(-30deg)}28%{opacity:1;transform:scale(1.35) rotate(10deg)}50%{transform:scale(1.08) rotate(-4deg)}75%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:scale(1.7)}}
+
+  /* QR 掃碼彈窗 */
+  #qrModal{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
+    background:rgba(4,5,10,.72);backdrop-filter:blur(4px);padding:20px}
+  #qrModal.open{display:flex;animation:fadeIn .2s ease}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .qr-box{position:relative;background:#12141d;border:1px solid var(--line);border-radius:22px;
+    padding:26px 26px 22px;text-align:center;max-width:340px;width:100%;
+    box-shadow:0 20px 60px rgba(0,0,0,.6);animation:popIn .35s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+  .qr-box h2{margin:0 0 16px;font-size:18px;font-weight:800}
+  .qr-img{background:#fff;padding:14px;border-radius:16px;display:inline-block;line-height:0}
+  .qr-img img{width:min(62vw,230px);height:auto;image-rendering:pixelated}
+  .qr-url{margin-top:16px;font-size:15px;font-weight:800;color:var(--accent);word-break:break-all}
+  .qr-hint{margin-top:10px;font-size:12.5px;color:var(--muted);line-height:1.6}
+  .qr-close{position:absolute;top:10px;right:14px;background:none;border:none;color:var(--muted);
+    font-size:26px;line-height:1;padding:4px 8px;cursor:pointer}
+  .qr-close:hover{color:var(--ink)}
+
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:42px;line-height:1.7}
+</style>
+</head>
+<body>
+<canvas id="fx"></canvas>
+<div id="clash">
+  <div class="flash"></div>
+  <div class="shock"></div>
+  <div class="sword swordL">🗡️</div>
+  <div class="sword swordR">🗡️</div>
+  <div class="cross">⚔️</div>
+</div>
+
+<div id="qrModal">
+  <div class="qr-box">
+    <button class="qr-close" id="qrClose" aria-label="關閉">×</button>
+    <h2>📲 用手機掃碼開玩</h2>
+    <div class="qr-img"><img alt="QR code" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZoAAAGaAQAAAAAefbjOAAACIUlEQVR42u1cS26EMBR7KgfIkbh6jsQBkFLy/rSbtrvKZkGnMN4Mlp/tZEbW748pBBFEEEEEEUQQQQESP459RfzaeT3/LjvFG04FfcgfDoL+Byievv55nr7xYD7cEBnLXjkt8n1kBAIjtgpsMjw8uGXNkboxgipbQcgIQEbYySRBuXEHVcgISEaoj3ge/CaD2goyAtxH6MAwH3G+b9BHQDEis0YfHe3ErAHGiDpsYKxShpCHHln56UGlT33m2z28Y0YVFWQEhEZc5Sf1mvpJnyTRUB3UCKSscXSN0OBp8jBynFzUCDBnGTFD5Jt7oEbATQ2vHcTcg6UOLyD8hk8SMgJFI5QHQ2eFZJ+ds4KMAGRElpSSNdW4c6a4veTUAJoafvJrIQrlI6rHJCNw0meWlOYjTCO0mfCBQUZgpU/TiBwYO3V4hdmWwMgIFI1IC2Exw8lg8iB5g4zA0QgXgGgmSiOy1KZGQDnL3Dw3xRuqGhguFIPpEyl9pmeY9ro8pkgzGEyfMFOjVZNeZXf3cB2tniAjUHxEJU0fIm1fVS2KkhFAU0O+6sEdgUMP+gio9Nn2UNVquPJgxY7Li+kTUSPCQkTgMMuZX+3h1MBxln1jZT19t5yvyoKMQHGWVWXbyZa7UiiEWQOXEX1VK/bg0llCa0RXhhgdZASqj6hve2ZRMUdumyEj8PqIWv6uTXbRTJAReH0Ef4+FIIIIIoggggg6KegTMEYMJlvEhMcAAAAASUVORK5CYII="></div>
+    <div class="qr-url">LiudeMac-mini.local:8765</div>
+    <div class="qr-hint">手機需與電腦連同一個 Wi-Fi。相機對準即可。</div>
+  </div>
+</div>
+
+<div class="wrap" id="wrap">
+  <header>
+    <h1>📱 手機旗艦對戰</h1>
+    <p>2006–2026 大廠手機 · 挑兩支比效能、相機、螢幕、電池總分</p>
+  </header>
+
+  <div class="controls">
+    <button class="btn-primary" id="battleBtn" disabled>⚔️ 對戰！</button>
+    <button class="btn-ghost" id="randomBtn">🎲 隨機對戰</button>
+    <button class="btn-ghost" id="resetBtn">重設</button>
+    <button class="btn-ghost" id="soundBtn" title="音效開關">🔊 音效</button>
+    <button class="btn-ghost" id="musicBtn" title="背景音樂開關">🎵 音樂</button>
+    <button class="btn-ghost" id="qrBtn" title="用手機掃碼開啟">📲 掃碼分享</button>
+  </div>
+
+  <div class="arena">
+    <div class="side side-a">
+      <div class="pick-row">
+        <select id="selA" aria-label="選擇手機 A"></select>
+        <button class="dice" data-side="A" title="隨機選一支">🎲</button>
+      </div>
+      <div class="card empty" id="cardA">點上方選一支手機</div>
+    </div>
+
+    <div class="vs">VS</div>
+
+    <div class="side side-b">
+      <div class="pick-row">
+        <select id="selB" aria-label="選擇手機 B"></select>
+        <button class="dice" data-side="B" title="隨機選一支">🎲</button>
+      </div>
+      <div class="card empty" id="cardB">點上方選一支手機</div>
+    </div>
+  </div>
+
+  <div class="verdict" id="verdict"></div>
+
+  <footer>
+    四項屬性各 0–100，總分滿分 400。分數為依規格做的相對分級，非實測跑分，僅供娛樂。<br>
+    SoC 世代 · 感光元件/變焦 · 解析度/更新率/亮度 · 電池容量/快充
+  </footer>
+</div>
+
+<script>
+// ---- 資料：依各機真實規格做的相對分級 ----
+const PHONES = [
+  // Apple
+  {b:"Apple", m:"iPhone 7 Plus", y:2016, c:"#3a3a3c", perf:45, cam:55, disp:40, batt:35, sp:["A10 Fusion · 3GB","雙 12MP（2x 望遠）","5.5\" 1080p LCD 60Hz","2900mAh"]},
+  {b:"Apple", m:"iPhone X", y:2017, c:"#3a3a3c", perf:55, cam:62, disp:58, batt:38, sp:["A11 Bionic · 3GB","雙 12MP OIS","5.8\" OLED 60Hz","2716mAh"]},
+  {b:"Apple", m:"iPhone XS Max", y:2018, c:"#3a3a3c", perf:63, cam:66, disp:60, batt:45, sp:["A12 Bionic · 4GB","雙 12MP","6.5\" OLED 60Hz","3174mAh"]},
+  {b:"Apple", m:"iPhone 11 Pro Max", y:2019, c:"#3a3a3c", perf:70, cam:75, disp:62, batt:60, sp:["A13 Bionic · 4GB","三 12MP（超廣角）","6.5\" OLED 60Hz","3969mAh"]},
+  {b:"Apple", m:"iPhone 12 Pro Max", y:2020, c:"#3a3a3c", perf:76, cam:80, disp:66, batt:55, sp:["A14 Bionic · 6GB","三 12MP + LiDAR","6.7\" OLED 60Hz","3687mAh"]},
+  {b:"Apple", m:"iPhone 13 Pro Max", y:2021, c:"#3a3a3c", perf:82, cam:84, disp:80, batt:70, sp:["A15 Bionic · 6GB","三 12MP（3x）","6.7\" OLED 120Hz","4352mAh"]},
+  {b:"Apple", m:"iPhone 14 Pro Max", y:2022, c:"#3a3a3c", perf:86, cam:87, disp:88, batt:70, sp:["A16 Bionic · 6GB","48MP 主鏡","6.7\" 120Hz 2000nits","4323mAh"]},
+  {b:"Apple", m:"iPhone 15 Pro Max", y:2023, c:"#3a3a3c", perf:92, cam:90, disp:90, batt:72, sp:["A17 Pro · 8GB","48MP + 5x 潛望","6.7\" 120Hz","4441mAh"]},
+  {b:"Apple", m:"iPhone 16 Pro Max", y:2024, c:"#3a3a3c", perf:96, cam:92, disp:92, batt:75, sp:["A18 Pro · 8GB","48MP + 5x","6.9\" 120Hz","4685mAh"]},
+
+  // Samsung
+  {b:"Samsung", m:"Galaxy S7 edge", y:2016, c:"#1428a0", perf:44, cam:58, disp:55, batt:50, sp:["SD820 / Exynos · 4GB","12MP Dual Pixel","5.5\" QHD AMOLED 60Hz","3600mAh"]},
+  {b:"Samsung", m:"Galaxy S8+", y:2017, c:"#1428a0", perf:54, cam:60, disp:65, batt:50, sp:["SD835 · 4GB","12MP","6.2\" QHD+ 60Hz","3500mAh"]},
+  {b:"Samsung", m:"Galaxy Note 9", y:2018, c:"#1428a0", perf:64, cam:70, disp:68, batt:62, sp:["SD845 · 8GB","雙 12MP 可變光圈","6.4\" QHD+ 60Hz","4000mAh"]},
+  {b:"Samsung", m:"Galaxy S10+", y:2019, c:"#1428a0", perf:71, cam:76, disp:72, batt:64, sp:["SD855 · 8GB","三鏡 12+12+16MP","6.4\" QHD+ 60Hz","4100mAh"]},
+  {b:"Samsung", m:"Galaxy S20 Ultra", y:2020, c:"#1428a0", perf:78, cam:82, disp:85, batt:78, sp:["SD865 · 12GB","108MP + 100x 空間變焦","6.9\" QHD+ 120Hz","5000mAh"]},
+  {b:"Samsung", m:"Galaxy S21 Ultra", y:2021, c:"#1428a0", perf:83, cam:88, disp:90, batt:78, sp:["SD888 · 12GB","108MP + 雙望遠 10x","6.8\" QHD+ 120Hz LTPO","5000mAh"]},
+  {b:"Samsung", m:"Galaxy S22 Ultra", y:2022, c:"#1428a0", perf:86, cam:89, disp:91, batt:80, sp:["SD8 Gen1 · 12GB","108MP + 10x · S Pen","6.8\" QHD+ 120Hz","5000mAh 45W"]},
+  {b:"Samsung", m:"Galaxy S23 Ultra", y:2023, c:"#1428a0", perf:91, cam:92, disp:93, batt:80, sp:["SD8 Gen2 · 12GB","200MP + 10x","6.8\" QHD+ 1750nits","5000mAh"]},
+  {b:"Samsung", m:"Galaxy S24 Ultra", y:2024, c:"#1428a0", perf:95, cam:92, disp:96, batt:80, sp:["SD8 Gen3 · 12GB","200MP + 5x · 鈦金屬","6.8\" QHD+ 2600nits","5000mAh"]},
+  {b:"Samsung", m:"Galaxy S25 Ultra", y:2025, c:"#1428a0", perf:98, cam:93, disp:97, batt:81, sp:["SD8 Elite · 12GB","200MP 四鏡","6.9\" QHD+ 120Hz","5000mAh 45W"]},
+
+  // Google
+  {b:"Google", m:"Pixel XL", y:2016, c:"#1a73e8", perf:46, cam:65, disp:54, batt:48, sp:["SD821 · 4GB","12.3MP（傳奇單鏡）","5.5\" QHD AMOLED 60Hz","3450mAh"]},
+  {b:"Google", m:"Pixel 3", y:2018, c:"#1a73e8", perf:62, cam:80, disp:58, batt:42, sp:["SD845 · 4GB","12.2MP Night Sight","5.5\" FHD+ 60Hz","2915mAh"]},
+  {b:"Google", m:"Pixel 4 XL", y:2019, c:"#1a73e8", perf:70, cam:82, disp:74, batt:55, sp:["SD855 · 6GB","12.2 + 16MP 望遠","6.3\" QHD+ 90Hz","3700mAh"]},
+  {b:"Google", m:"Pixel 6 Pro", y:2021, c:"#1a73e8", perf:78, cam:88, disp:88, batt:76, sp:["Tensor · 12GB","50MP + 4x 潛望","6.7\" QHD+ 120Hz","5003mAh"]},
+  {b:"Google", m:"Pixel 7 Pro", y:2022, c:"#1a73e8", perf:80, cam:90, disp:90, batt:76, sp:["Tensor G2 · 12GB","50MP + 5x","6.7\" QHD+ 120Hz","5000mAh"]},
+  {b:"Google", m:"Pixel 8 Pro", y:2023, c:"#1a73e8", perf:84, cam:91, disp:93, batt:78, sp:["Tensor G3 · 12GB","50MP 三鏡","6.7\" 120Hz 2400nits","5050mAh"]},
+  {b:"Google", m:"Pixel 9 Pro XL", y:2024, c:"#1a73e8", perf:87, cam:92, disp:95, batt:78, sp:["Tensor G4 · 16GB","50MP + 5x","6.8\" 120Hz 3000nits","5060mAh"]},
+
+  // Xiaomi
+  {b:"Xiaomi", m:"Mi 6", y:2017, c:"#ff6900", perf:56, cam:60, disp:48, batt:52, sp:["SD835 · 6GB","雙 12MP","5.15\" FHD 60Hz","3350mAh"]},
+  {b:"Xiaomi", m:"Mi 11 Ultra", y:2021, c:"#ff6900", perf:84, cam:90, disp:92, batt:85, sp:["SD888 · 12GB","50MP + 48MP 潛望 · 背屏","6.81\" QHD+ 120Hz","5000mAh 67W"]},
+  {b:"Xiaomi", m:"Xiaomi 13 Pro", y:2023, c:"#ff6900", perf:91, cam:92, disp:93, batt:90, sp:["SD8 Gen2 · 12GB","50MP 1吋 Leica","6.73\" QHD+ 120Hz","4820mAh 120W"]},
+  {b:"Xiaomi", m:"Xiaomi 14 Ultra", y:2024, c:"#ff6900", perf:95, cam:96, disp:97, batt:90, sp:["SD8 Gen3 · 16GB","四 50MP 1吋 Leica 可變光圈","6.73\" QHD+ 3000nits","5300mAh 90W"]},
+  {b:"Xiaomi", m:"Xiaomi 15 Ultra", y:2025, c:"#ff6900", perf:98, cam:97, disp:97, batt:91, sp:["SD8 Elite · 16GB","200MP 潛望 Leica","6.73\" QHD+ 120Hz","5410mAh 90W"]},
+
+  // Asus
+  {b:"ASUS", m:"ZenFone 3 Deluxe", y:2016, c:"#9b1d9e", perf:47, cam:56, disp:50, batt:46, sp:["SD821 · 6GB","23MP Sony IMX318","5.7\" FHD AMOLED 60Hz","3000mAh"]},
+  {b:"ASUS", m:"ROG Phone II", y:2019, c:"#9b1d9e", perf:76, cam:70, disp:80, batt:88, sp:["SD855+ · 12GB","48MP + 13MP","6.59\" FHD+ AMOLED 120Hz","6000mAh 30W"]},
+  {b:"ASUS", m:"ROG Phone 5", y:2021, c:"#9b1d9e", perf:85, cam:72, disp:86, batt:92, sp:["SD888 · 16GB","64MP 主鏡","6.78\" FHD+ 144Hz","6000mAh 65W"]},
+  {b:"ASUS", m:"Zenfone 9", y:2022, c:"#9b1d9e", perf:88, cam:82, disp:82, batt:70, sp:["SD8+ Gen1 · 8GB","50MP 雲台防手震 IMX766","5.9\" FHD+ 120Hz","4300mAh 30W"]},
+  {b:"ASUS", m:"ROG Phone 7", y:2023, c:"#9b1d9e", perf:93, cam:76, disp:88, batt:93, sp:["SD8 Gen2 · 16GB","50MP IMX766","6.78\" FHD+ 165Hz","6000mAh 65W"]},
+  {b:"ASUS", m:"ROG Phone 8 Pro", y:2024, c:"#9b1d9e", perf:96, cam:80, disp:90, batt:90, sp:["SD8 Gen3 · 24GB","50MP 雲台 + 3x 潛望","6.78\" FHD+ 165Hz LTPO","5500mAh 65W"]},
+  {b:"ASUS", m:"ROG Phone 9 Pro", y:2025, c:"#9b1d9e", perf:99, cam:82, disp:91, batt:91, sp:["SD8 Elite · 24GB","50MP IMX890 雲台","6.78\" FHD+ 185Hz","5800mAh 65W"]},
+
+  // Acer（2016 後退出手機市場，僅存早期機型）
+  {b:"Acer", m:"Liquid Jade Primo", y:2016, c:"#83b81a", perf:42, cam:54, disp:50, batt:40, sp:["SD808 六核 · 3GB","21MP · Continuum 桌面模式","5.5\" FHD AMOLED 60Hz","2870mAh"]},
+  {b:"Acer", m:"Liquid Zest Plus", y:2016, c:"#83b81a", perf:28, cam:42, disp:34, batt:72, sp:["MT6735 四核 · 3GB","13MP 三重對焦","5.5\" HD 60Hz","5000mAh（大電量）"]},
+
+  // Sony
+  {b:"Sony", m:"Xperia 1", y:2019, c:"#101317", perf:70, cam:74, disp:80, batt:48, sp:["SD855 · 6GB","三 12MP","6.5\" 4K OLED 21:9","3330mAh"]},
+  {b:"Sony", m:"Xperia 1 V", y:2023, c:"#101317", perf:90, cam:88, disp:95, batt:78, sp:["SD8 Gen2 · 12GB","48MP Exmor T","6.5\" 4K OLED 120Hz","5000mAh"]},
+
+  // OnePlus
+  {b:"OnePlus", m:"OnePlus 7 Pro", y:2019, c:"#eb0029", perf:73, cam:78, disp:82, batt:68, sp:["SD855 · 12GB","48MP 三鏡","6.67\" QHD+ 90Hz","4000mAh 30W"]},
+  {b:"OnePlus", m:"OnePlus 11", y:2023, c:"#eb0029", perf:91, cam:88, disp:92, batt:88, sp:["SD8 Gen2 · 16GB","50MP Hasselblad","6.7\" QHD+ 120Hz","5000mAh 100W"]},
+
+  // Huawei
+  {b:"Huawei", m:"P30 Pro", y:2019, c:"#cf0a2c", perf:68, cam:88, disp:68, batt:72, sp:["Kirin 980 · 8GB","40MP + 5x 潛望（首創）","6.47\" FHD+ 60Hz","4200mAh 40W"]},
+  {b:"Huawei", m:"Mate 40 Pro", y:2020, c:"#cf0a2c", perf:76, cam:90, disp:84, batt:80, sp:["Kirin 9000 · 8GB","50MP + 5x","6.76\" 90Hz","4400mAh 66W"]},
+  {b:"Huawei", m:"P60 Pro", y:2023, c:"#cf0a2c", perf:86, cam:93, disp:92, batt:86, sp:["SD8 Gen2(4G) · 8GB","48MP 可變光圈 + 潛望","6.67\" 120Hz","4815mAh 88W"]},
+
+  // Vivo / Oppo
+  {b:"vivo", m:"X100 Pro", y:2023, c:"#415fff", perf:92, cam:95, disp:96, batt:92, sp:["Dimensity 9300 · 16GB","50MP 1吋 + 100mm 潛望 Zeiss","6.78\" QHD+ 3000nits","5400mAh 100W"]},
+  {b:"OPPO", m:"Find X7 Ultra", y:2024, c:"#0c9d58", perf:95, cam:95, disp:96, batt:88, sp:["SD8 Gen3 · 16GB","雙潛望 50MP Hasselblad","6.82\" QHD+ 120Hz","5000mAh 100W"]},
+
+  // HTC（2006–2018 旗艦史，2018 U12+ 後淡出旗艦戰場）
+  {b:"HTC", m:"TyTN", y:2006, c:"#6cbe45", perf:6, cam:12, disp:10, batt:18, sp:["OMAP 200MHz · 64MB","2MP","2.8\" QVGA 電阻觸控","1350mAh"]},
+  {b:"HTC", m:"Dream (G1)", y:2008, c:"#6cbe45", perf:12, cam:20, disp:18, batt:20, sp:["MSM7201A 528MHz · 192MB","3.2MP（首款 Android）","3.2\" HVGA 滑蓋鍵盤","1150mAh"]},
+  {b:"HTC", m:"HD2", y:2009, c:"#6cbe45", perf:18, cam:24, disp:32, batt:24, sp:["SD S1 1GHz · 448MB","5MP","4.3\" WVGA（當年巨屏）","1230mAh"]},
+  {b:"HTC", m:"Desire", y:2010, c:"#6cbe45", perf:24, cam:28, disp:36, batt:28, sp:["QSD8250 1GHz · 576MB","5MP","3.7\" AMOLED","1400mAh"]},
+  {b:"HTC", m:"Sensation", y:2011, c:"#6cbe45", perf:32, cam:38, disp:42, batt:32, sp:["SD S3 雙核 1.2GHz · 768MB","8MP","4.3\" qHD","1520mAh"]},
+  {b:"HTC", m:"One X", y:2012, c:"#6cbe45", perf:40, cam:46, disp:50, batt:36, sp:["Tegra 3 四核 · 1GB","8MP","4.7\" 720p","1800mAh"]},
+  {b:"HTC", m:"One (M7)", y:2013, c:"#6cbe45", perf:46, cam:52, disp:56, batt:42, sp:["SD600 · 2GB","4MP UltraPixel · BoomSound","4.7\" 1080p","2300mAh"]},
+  {b:"HTC", m:"One (M8)", y:2014, c:"#6cbe45", perf:54, cam:54, disp:60, batt:48, sp:["SD801 · 2GB","Duo Camera 雙鏡 4MP","5\" 1080p","2600mAh"]},
+  {b:"HTC", m:"One M9", y:2015, c:"#6cbe45", perf:58, cam:60, disp:62, batt:50, sp:["SD810 · 3GB","20MP","5\" 1080p","2840mAh"]},
+  {b:"HTC", m:"HTC 10", y:2016, c:"#6cbe45", perf:62, cam:68, disp:68, batt:54, sp:["SD820 · 4GB","12MP UltraPixel 2 OIS","5.2\" QHD","3000mAh"]},
+  {b:"HTC", m:"U11", y:2017, c:"#6cbe45", perf:68, cam:76, disp:72, batt:56, sp:["SD835 · 6GB","12MP（DxO 榜首）· Edge Sense","5.5\" QHD","3000mAh"]},
+  {b:"HTC", m:"U12+", y:2018, c:"#6cbe45", perf:72, cam:78, disp:76, batt:60, sp:["SD845 · 6GB","雙 12+16MP","6\" QHD+","3500mAh"]},
+
+  // BenQ（BenQ-Siemens 2007 解散，僅早期功能機與少數中階 Android）
+  {b:"BenQ", m:"BenQ-Siemens S88", y:2006, c:"#9c1f63", perf:5, cam:16, disp:8, batt:14, sp:["功能機平台","3.2MP","2.0\" QVGA","880mAh"]},
+  {b:"BenQ", m:"BenQ F5", y:2015, c:"#9c1f63", perf:40, cam:46, disp:50, batt:38, sp:["MT6753 八核 · 3GB","13MP","5\" FHD AMOLED","2500mAh"]},
+];
+
+const STATS = [{key:"perf",label:"效能"},{key:"cam",label:"相機"},{key:"disp",label:"螢幕"},{key:"batt",label:"電池"}];
+const total = p => STATS.reduce((s,st)=>s+p[st.key],0);
+const state = {A:null, B:null};
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+let busy = false;
+
+// ---- 下拉選單 ----
+function buildSelect(sel){
+  const brands = [...new Set(PHONES.map(p=>p.b))];
+  sel.innerHTML = '<option value="">— 選擇手機 —</option>';
+  brands.forEach(br=>{
+    const og=document.createElement("optgroup"); og.label=br;
+    PHONES.map((p,i)=>({p,i})).filter(x=>x.p.b===br).sort((a,b)=>a.p.y-b.p.y)
+      .forEach(({p,i})=>{const o=document.createElement("option");o.value=i;o.textContent=`${p.m} (${p.y})`;og.appendChild(o);});
+    sel.appendChild(og);
+  });
+}
+buildSelect(document.getElementById("selA"));
+buildSelect(document.getElementById("selB"));
+
+function hexA(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+
+// ---- 渲染卡片。hold=true 時長條與總分先歸零，由對戰流程逐步揭曉 ----
+function renderCard(side, hold=false){
+  const el=document.getElementById("card"+side), p=state[side];
+  if(!p){el.className="card empty";el.textContent="點上方選一支手機";el.style.cssText="";return;}
+  el.className="card";
+  el.style.setProperty("--bc",p.c);
+  el.style.setProperty("--bcg",hexA(p.c,.55));
+  el.innerHTML=`
+    <div class="crown">👑</div>
+    <div class="stamp">勝</div>
+    <div class="card-top" style="background:linear-gradient(135deg,${p.c},${hexA(p.c,.55)})">
+      <div class="card-brand">${p.b}</div>
+      <div class="card-model">${p.m}</div>
+      <div class="card-year">${p.y}</div>
+    </div>
+    <div class="card-body">
+      ${STATS.map((st,idx)=>`
+        <div class="stat" data-key="${st.key}">
+          <div class="stat-head"><span class="stat-name">${st.label}</span><span class="stat-val">${p[st.key]}</span></div>
+          <div class="bar"><i style="width:${hold?0:p[st.key]+'%'}"></i></div>
+          <div class="spec">${p.sp[idx]}</div>
+        </div>`).join("")}
+      <div class="total"><span class="total-label">總分</span>
+        <span class="total-num"><span class="tnum">${hold?0:total(p)}</span><span class="denom">/400</span></span></div>
+    </div>`;
+  if(!hold){
+    requestAnimationFrame(()=>el.querySelectorAll(".bar>i").forEach(b=>{const w=b.style.width;b.style.width="0";requestAnimationFrame(()=>b.style.width=w);}));
+  }
+}
+
+// ---- 音效（Web Audio 即時合成）----
+let audioCtx=null, soundOn=true;
+function actx(){
+  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==="suspended") audioCtx.resume();
+  return audioCtx;
+}
+function noiseBuf(ac,dur,shape){
+  const buf=ac.createBuffer(1,Math.floor(ac.sampleRate*dur),ac.sampleRate);
+  const d=buf.getChannelData(0);
+  for(let i=0;i<d.length;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,shape);
+  return buf;
+}
+// 金屬碰撞：高頻噪爆 + 一組不諧和金屬泛音
+function metalClang(t0){
+  if(!soundOn) return;
+  const ac=actx(), t=t0||ac.currentTime;
+  const src=ac.createBufferSource(); src.buffer=noiseBuf(ac,0.5,2);
+  const bp=ac.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=3400; bp.Q.value=0.9;
+  const g=ac.createGain(); g.gain.setValueAtTime(0.55,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.45);
+  src.connect(bp).connect(g).connect(ac.destination); src.start(t);
+  [1,1.71,2.43,3.16,4.08].forEach((r,i)=>{
+    const o=ac.createOscillator(); o.type="square"; o.frequency.value=1740*r;
+    const og=ac.createGain(); og.gain.setValueAtTime(0.13/(i+1),t); og.gain.exponentialRampToValueAtTime(0.001,t+0.38);
+    o.connect(og).connect(ac.destination); o.start(t); o.stop(t+0.42);
+  });
+}
+// 爆炸：低通衰減噪音 + 下掃低頻轟鳴
+function explosion(t0){
+  if(!soundOn) return;
+  const ac=actx(), t=t0||ac.currentTime, dur=0.95;
+  const src=ac.createBufferSource(); src.buffer=noiseBuf(ac,dur,1.4);
+  const lp=ac.createBiquadFilter(); lp.type="lowpass";
+  lp.frequency.setValueAtTime(1900,t); lp.frequency.exponentialRampToValueAtTime(110,t+dur);
+  const g=ac.createGain(); g.gain.setValueAtTime(0.95,t); g.gain.exponentialRampToValueAtTime(0.001,t+dur);
+  src.connect(lp).connect(g).connect(ac.destination); src.start(t);
+  const o=ac.createOscillator(); o.type="sine";
+  o.frequency.setValueAtTime(130,t); o.frequency.exponentialRampToValueAtTime(34,t+0.55);
+  const og=ac.createGain(); og.gain.setValueAtTime(0.9,t); og.gain.exponentialRampToValueAtTime(0.001,t+0.6);
+  o.connect(og).connect(ac.destination); o.start(t); o.stop(t+0.65);
+}
+// 勝利小號角（上行三音）
+function fanfare(){
+  if(!soundOn) return;
+  const ac=actx(), t=ac.currentTime;
+  [523,659,784,1046].forEach((f,i)=>{
+    const o=ac.createOscillator(); o.type="triangle"; o.frequency.value=f;
+    const g=ac.createGain(); const st=t+i*0.1;
+    g.gain.setValueAtTime(0.0001,st); g.gain.exponentialRampToValueAtTime(0.22,st+0.03); g.gain.exponentialRampToValueAtTime(0.001,st+0.4);
+    o.connect(g).connect(ac.destination); o.start(st); o.stop(st+0.45);
+  });
+}
+
+// 印章落下：短促重擊
+function stampThud(){
+  if(!soundOn) return;
+  const ac=actx(), t=ac.currentTime;
+  const o=ac.createOscillator(); o.type="sine";
+  o.frequency.setValueAtTime(180,t); o.frequency.exponentialRampToValueAtTime(48,t+0.18);
+  const g=ac.createGain(); g.gain.setValueAtTime(0.7,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.22);
+  o.connect(g).connect(ac.destination); o.start(t); o.stop(t+0.24);
+  const s=ac.createBufferSource(); s.buffer=noiseBuf(ac,0.12,3);
+  const sg=ac.createGain(); sg.gain.setValueAtTime(0.35,t); sg.gain.exponentialRampToValueAtTime(0.001,t+0.12);
+  s.connect(sg).connect(ac.destination); s.start(t);
+}
+
+// ---- 快節奏背景音樂（即時合成的循環節拍）----
+let bgmOn=false, bgmTimer=null, bgStep=0, nextStepTime=0, musicGain=null;
+const STEP=0.1075; // 16 分音符長度（約 140 BPM）
+const HZ={A2:110,C3:130.81,D3:146.83,E3:164.81,G3:196,A3:220,C4:261.63,D4:293.66,E4:329.63,G4:392,A4:440,C5:523.25,D5:587.33,E5:659.25,G5:783.99,A5:880};
+const BASS=["A2",0,"A2",0,"A2",0,"C3",0,"G3",0,0,"G3",0,"E3",0,0];
+const LEAD=["A4","C5","E5","A5","E5","C5","D5","E5","C5","A4","G4","A4","E4","G4","A4","C5"];
+const KICK=[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0];
+const HAT =[0,0,1,0,0,0,1,0,0,0,1,0,0,1,1,0];
+function bgKick(t){const ac=audioCtx,o=ac.createOscillator(),g=ac.createGain();o.type="sine";
+  o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(45,t+0.12);
+  g.gain.setValueAtTime(0.9,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.16);
+  o.connect(g).connect(musicGain);o.start(t);o.stop(t+0.18);}
+function bgHat(t){const ac=audioCtx,s=ac.createBufferSource();s.buffer=noiseBuf(ac,0.05,1);
+  const hp=ac.createBiquadFilter();hp.type="highpass";hp.frequency.value=7000;
+  const g=ac.createGain();g.gain.setValueAtTime(0.25,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.04);
+  s.connect(hp).connect(g).connect(musicGain);s.start(t);}
+function bgBass(t,f){const ac=audioCtx,o=ac.createOscillator(),g=ac.createGain();o.type="sawtooth";
+  o.frequency.value=f;const lp=ac.createBiquadFilter();lp.type="lowpass";lp.frequency.value=900;
+  g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.32,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+0.16);
+  o.connect(lp).connect(g).connect(musicGain);o.start(t);o.stop(t+0.18);}
+function bgLead(t,f){const ac=audioCtx,o=ac.createOscillator(),g=ac.createGain();o.type="square";
+  o.frequency.value=f;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.12,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+0.13);
+  o.connect(g).connect(musicGain);o.start(t);o.stop(t+0.15);}
+function bgScheduler(){
+  while(nextStepTime < audioCtx.currentTime + 0.15){
+    const s=bgStep%16;
+    if(KICK[s]) bgKick(nextStepTime);
+    if(HAT[s])  bgHat(nextStepTime);
+    if(BASS[s]) bgBass(nextStepTime, HZ[BASS[s]]);
+    if(LEAD[s] && s%2===0) bgLead(nextStepTime, HZ[LEAD[s]]);
+    nextStepTime += STEP; bgStep++;
+  }
+}
+function startBGM(){
+  const ac=actx();
+  if(!musicGain){musicGain=ac.createGain();musicGain.gain.value=0.22;musicGain.connect(ac.destination);}
+  if(bgmTimer) return;
+  bgmOn=true; bgStep=0; nextStepTime=ac.currentTime+0.1;
+  bgmTimer=setInterval(bgScheduler,25);
+  document.getElementById("musicBtn").textContent="🎵 音樂 ▮▮";
+}
+function stopBGM(){
+  bgmOn=false; if(bgmTimer){clearInterval(bgmTimer);bgmTimer=null;}
+  document.getElementById("musicBtn").textContent="🎵 音樂";
+}
+
+// ---- 粒子引擎 ----
+const cvs=document.getElementById("fx"), ctx=cvs.getContext("2d");
+function sizeCanvas(){cvs.width=innerWidth;cvs.height=innerHeight;}
+sizeCanvas(); addEventListener("resize",sizeCanvas);
+let parts=[], raf=null;
+function spawn(x,y,n,colors,power){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, sp=Math.random()*power+2;
+    parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-Math.random()*4,
+      g:.18+Math.random()*.12,size:5+Math.random()*8,rot:Math.random()*6,vr:(Math.random()-.5)*.4,
+      color:colors[(Math.random()*colors.length)|0],life:1});
+  }
+  if(!raf) raf=requestAnimationFrame(loop);
+}
+function loop(){
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  parts.forEach(p=>{p.vy+=p.g;p.x+=p.vx;p.y+=p.vy;p.rot+=p.vr;p.life-=.0075;
+    ctx.save();ctx.globalAlpha=Math.max(0,p.life);ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+    ctx.fillStyle=p.color;ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*.55);ctx.restore();});
+  parts=parts.filter(p=>p.life>0&&p.y<cvs.height+60);
+  if(parts.length) raf=requestAnimationFrame(loop); else {raf=null;ctx.clearRect(0,0,cvs.width,cvs.height);}
+}
+function burstAt(el,colors,n=26,power=7){
+  const r=el.getBoundingClientRect();
+  spawn(r.left+r.width/2, r.top+r.height/2, n, colors, power);
+}
+
+// ---- 對戰流程 ----
+async function battle(){
+  if(busy) return;
+  const a=state.A,b=state.B; if(!a||!b) return;
+  busy=true;
+  document.getElementById("battleBtn").disabled=true;
+  document.getElementById("randomBtn").disabled=true;
+  if(!bgmTimer && !musicUserStopped) startBGM(); // 首戰自動開背景音樂
+
+  const v=document.getElementById("verdict"); v.classList.remove("show");
+  renderCard("A",true); renderCard("B",true);
+
+  // 1) 衝撞：雙劍從兩側飛入交擊
+  if(soundOn) actx(); // 在使用者手勢內喚醒音訊
+  const clash=document.getElementById("clash"); clash.classList.add("go");
+  await sleep(820);   // 等雙劍飛到中央撞擊
+  // 撞擊瞬間：金屬碰撞聲 + 螢幕震動 + 大火花
+  metalClang();
+  document.getElementById("wrap").classList.add("shake");
+  spawn(innerWidth/2, innerHeight*0.42, 90, ["#fff","#ffe9a8","#ffd24a","#ffa53b","#9cc7ff"], 14);
+  await sleep(130);
+  explosion();        // 緊接爆炸轟鳴
+  spawn(innerWidth/2, innerHeight*0.42, 70, ["#ff7a3b","#ffd24a","#fff","#e7277b"], 11);
+  await sleep(560);
+  clash.classList.remove("go");
+  document.getElementById("wrap").classList.remove("shake");
+  await sleep(150);
+
+  // 2) 屬性逐項揭曉
+  for(const st of STATS){
+    const av=a[st.key], bv=b[st.key];
+    const sa=document.querySelector(`#cardA .stat[data-key="${st.key}"]`);
+    const sb=document.querySelector(`#cardB .stat[data-key="${st.key}"]`);
+    sa.querySelector(".bar>i").style.width=av+"%";
+    sb.querySelector(".bar>i").style.width=bv+"%";
+    [sa,sb].forEach(s=>{s.classList.add("pop");setTimeout(()=>s.classList.remove("pop"),460);});
+    await sleep(360);
+    if(av>bv){sa.classList.add("win");burstAt(sa,["#27e6a0","#9affd6","#ffffff"],16,5);}
+    else if(bv>av){sb.classList.add("win");burstAt(sb,["#27e6a0","#9affd6","#ffffff"],16,5);}
+    await sleep(300);
+  }
+  await sleep(150);
+
+  // 3) 總分跳動計數
+  const ta=total(a), tb=total(b);
+  const na=document.querySelector("#cardA .tnum"), nb=document.querySelector("#cardB .tnum");
+  await Promise.all([countUp(na,ta,750), countUp(nb,tb,750)]);
+  await sleep(250);
+
+  // 4) 宣判
+  const ca=document.getElementById("cardA"), cb=document.getElementById("cardB");
+  let msg;
+  if(ta>tb){
+    ca.classList.add("is-winner","glow-on"); cb.classList.add("is-loser");
+    msg=`🏆 ${a.m} 勝出！<span class="sub">${ta} : ${tb} （領先 ${ta-tb} 分）</span>`;
+    celebrate(ca,a.c);
+  }else if(tb>ta){
+    cb.classList.add("is-winner","glow-on"); ca.classList.add("is-loser");
+    msg=`🏆 ${b.m} 勝出！<span class="sub">${tb} : ${ta} （領先 ${tb-ta} 分）</span>`;
+    celebrate(cb,b.c);
+  }else{
+    ca.classList.add("glow-on"); cb.classList.add("glow-on");
+    msg=`🤝 平手！<span class="sub">兩支都是 ${ta} 分</span>`;
+    burstAt(ca,["#5b86f7","#ffd24a","#fff"],24,7); burstAt(cb,["#e7277b","#27e6a0","#fff"],24,7);
+  }
+  v.innerHTML=msg; v.classList.add("show");
+
+  busy=false;
+  document.getElementById("battleBtn").disabled=false;
+  document.getElementById("randomBtn").disabled=false;
+}
+
+function celebrate(card){
+  fanfare();
+  setTimeout(stampThud,150); // 對齊「勝」印章落下
+  const r=card.getBoundingClientRect();
+  const colors=["#ffd24a","#27e6a0","#5b86f7","#e7277b","#ffffff"];
+  // 由卡片頂端兩側噴彩帶，分三波
+  for(let w=0;w<3;w++){
+    setTimeout(()=>{
+      spawn(r.left+10, r.top+10, 40, colors, 9);
+      spawn(r.right-10, r.top+10, 40, colors, 9);
+      spawn(r.left+r.width/2, r.top, 50, colors, 10);
+    }, w*180);
+  }
+}
+
+function countUp(el,to,dur){
+  return new Promise(res=>{
+    const start=performance.now();
+    function step(now){
+      const t=Math.min(1,(now-start)/dur), e=1-Math.pow(1-t,3);
+      el.textContent=Math.round(e*to);
+      if(t<1) requestAnimationFrame(step); else {el.textContent=to;res();}
+    }
+    requestAnimationFrame(step);
+  });
+}
+
+// ---- 事件 ----
+function setSide(side, idx){
+  state[side]=(idx===""||idx==null)?null:PHONES[+idx];
+  document.getElementById("sel"+side).value=(idx===""||idx==null)?"":idx;
+  renderCard(side);
+  document.getElementById("verdict").classList.remove("show");
+  document.getElementById("battleBtn").disabled=!(state.A&&state.B);
+}
+document.getElementById("selA").addEventListener("change",e=>setSide("A",e.target.value));
+document.getElementById("selB").addEventListener("change",e=>setSide("B",e.target.value));
+document.querySelectorAll(".dice").forEach(btn=>btn.addEventListener("click",()=>{
+  if(busy)return; const side=btn.dataset.side, other=side==="A"?state.B:state.A;
+  let idx; do{idx=Math.floor(Math.random()*PHONES.length);}while(other&&PHONES[idx]===other);
+  setSide(side,idx);
+}));
+document.getElementById("battleBtn").addEventListener("click",battle);
+document.getElementById("randomBtn").addEventListener("click",()=>{
+  if(busy)return;
+  let i=Math.floor(Math.random()*PHONES.length),j;
+  do{j=Math.floor(Math.random()*PHONES.length);}while(j===i);
+  setSide("A",i); setSide("B",j); setTimeout(battle,260);
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{if(busy)return;setSide("A","");setSide("B","");});
+document.getElementById("soundBtn").addEventListener("click",function(){
+  soundOn=!soundOn;
+  this.textContent=soundOn?"🔊 音效":"🔇 靜音";
+  if(soundOn) actx();
+});
+let musicUserStopped=false;
+document.getElementById("musicBtn").addEventListener("click",function(){
+  if(bgmTimer){stopBGM();musicUserStopped=true;} else {startBGM();musicUserStopped=false;}
+});
+const qrModal=document.getElementById("qrModal");
+document.getElementById("qrBtn").addEventListener("click",()=>qrModal.classList.add("open"));
+document.getElementById("qrClose").addEventListener("click",()=>qrModal.classList.remove("open"));
+qrModal.addEventListener("click",e=>{if(e.target===qrModal)qrModal.classList.remove("open");});
+</script>
+</body>
+</html>
