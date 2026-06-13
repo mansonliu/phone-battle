@@ -89,9 +89,25 @@
   .dice{flex:0 0 auto;padding:11px 14px;font-size:16px;background:#11131c;border:1px solid var(--line);border-radius:12px;color:var(--ink)}
   .dice:hover{border-color:var(--accent);box-shadow:0 0 14px rgba(91,134,247,.3)}
 
+  .card-stage{perspective:1100px;min-height:250px}
   .card{position:relative;background:var(--panel);border-radius:var(--radius);overflow:hidden;
     border:1px solid var(--line);min-height:120px;backdrop-filter:blur(8px);
-    box-shadow:0 10px 30px rgba(0,0,0,.45);transition:transform .35s cubic-bezier(.22,1,.36,1), box-shadow .35s ease, filter .35s ease}
+    box-shadow:0 10px 30px rgba(0,0,0,.45);
+    transform:
+      translateZ(var(--lungeZ,0px))
+      rotateX(var(--tiltX,0deg))
+      rotateY(calc(var(--tiltY,0deg) + var(--lungeY,0deg)))
+      translateY(var(--lift,0px)) rotateZ(var(--rotz,0deg)) scale(var(--scale,1));
+    transition:transform .3s cubic-bezier(.22,1,.36,1), box-shadow .35s ease, filter .35s ease;
+    will-change:transform}
+  .card.flip{animation:flipIn .55s cubic-bezier(.22,1,.36,1)}
+  @keyframes flipIn{from{opacity:0;transform:rotateY(-78deg) scale(.9)}to{opacity:1;transform:rotateY(0) scale(1)}}
+  .glare{position:absolute;inset:0;z-index:6;pointer-events:none;border-radius:var(--radius);opacity:0;
+    transition:opacity .3s ease;
+    background:radial-gradient(circle at var(--mx,50%) var(--my,28%), rgba(255,255,255,.20), transparent 42%)}
+  .card:hover .glare{opacity:1}
+  .card.lunge-a{--lungeY:26deg;--lungeZ:60px}
+  .card.lunge-b{--lungeY:-26deg;--lungeZ:60px}
   .card.empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;min-height:250px}
   .card.glow-on{box-shadow:0 0 0 1px var(--bc,#5b86f7), 0 0 34px var(--bcg,rgba(91,134,247,.4)), 0 10px 30px rgba(0,0,0,.5)}
   .card-top{padding:16px 16px 13px;color:#fff;position:relative;overflow:hidden}
@@ -123,9 +139,9 @@
   .total-num{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
   .total-num .denom{font-size:14px;color:var(--muted);font-weight:700}
 
-  .card.is-winner{transform:translateY(-6px) scale(1.015)}
+  .card.is-winner{--lift:-12px;--scale:1.04}
   .card.is-winner .total-num .tnum{color:var(--gold);text-shadow:0 0 18px rgba(255,210,74,.7)}
-  .card.is-loser{filter:grayscale(.55) brightness(.78);transform:rotate(-.6deg) translateY(2px)}
+  .card.is-loser{--rotz:-2deg;--scale:.95;filter:grayscale(.5) brightness(.8)}
   .crown{position:absolute;top:-14px;left:50%;transform:translateX(-50%) scale(0);font-size:30px;
     filter:drop-shadow(0 0 10px rgba(255,210,74,.8));transition:transform .4s cubic-bezier(.34,1.56,.64,1)}
   .card.is-winner .crown{transform:translateX(-50%) scale(1)}
@@ -233,7 +249,7 @@
         <select id="selA" aria-label="選擇手機 A"></select>
         <button class="dice" data-side="A" title="隨機選一支">🎲</button>
       </div>
-      <div class="card empty" id="cardA">點上方選一支手機</div>
+      <div class="card-stage" id="cardA"><div class="card empty">點上方選一支手機</div></div>
     </div>
 
     <div class="vs">VS</div>
@@ -243,7 +259,7 @@
         <select id="selB" aria-label="選擇手機 B"></select>
         <button class="dice" data-side="B" title="隨機選一支">🎲</button>
       </div>
-      <div class="card empty" id="cardB">點上方選一支手機</div>
+      <div class="card-stage" id="cardB"><div class="card empty">點上方選一支手機</div></div>
     </div>
   </div>
 
@@ -370,31 +386,31 @@ function hexA(hex,a){const n=parseInt(hex.slice(1),16);return `rgba(${(n>>16)&25
 
 // ---- 渲染卡片。hold=true 時長條與總分先歸零，由對戰流程逐步揭曉 ----
 function renderCard(side, hold=false){
-  const el=document.getElementById("card"+side), p=state[side];
-  if(!p){el.className="card empty";el.textContent="點上方選一支手機";el.style.cssText="";return;}
-  el.className="card";
-  el.style.setProperty("--bc",p.c);
-  el.style.setProperty("--bcg",hexA(p.c,.55));
-  el.innerHTML=`
-    <div class="crown">👑</div>
-    <div class="stamp">勝</div>
-    <div class="card-top" style="background:linear-gradient(135deg,${p.c},${hexA(p.c,.55)})">
-      <div class="card-brand">${p.b}</div>
-      <div class="card-model">${p.m}</div>
-      <div class="card-year">${p.y}</div>
-    </div>
-    <div class="card-body">
-      ${STATS.map((st,idx)=>`
-        <div class="stat" data-key="${st.key}">
-          <div class="stat-head"><span class="stat-name">${st.label}</span><span class="stat-val">${p[st.key]}</span></div>
-          <div class="bar"><i style="width:${hold?0:p[st.key]+'%'}"></i></div>
-          <div class="spec">${p.sp[idx]}</div>
-        </div>`).join("")}
-      <div class="total"><span class="total-label">總分</span>
-        <span class="total-num"><span class="tnum">${hold?0:total(p)}</span><span class="denom">/400</span></span></div>
+  const stage=document.getElementById("card"+side), p=state[side];
+  if(!p){stage.innerHTML='<div class="card empty">點上方選一支手機</div>';return;}
+  stage.innerHTML=`
+    <div class="card${hold?'':' flip'}" style="--bc:${p.c};--bcg:${hexA(p.c,.55)}">
+      <div class="glare"></div>
+      <div class="crown">👑</div>
+      <div class="stamp">勝</div>
+      <div class="card-top" style="background:linear-gradient(135deg,${p.c},${hexA(p.c,.55)})">
+        <div class="card-brand">${p.b}</div>
+        <div class="card-model">${p.m}</div>
+        <div class="card-year">${p.y}</div>
+      </div>
+      <div class="card-body">
+        ${STATS.map((st,idx)=>`
+          <div class="stat" data-key="${st.key}">
+            <div class="stat-head"><span class="stat-name">${st.label}</span><span class="stat-val">${p[st.key]}</span></div>
+            <div class="bar"><i style="width:${hold?0:p[st.key]+'%'}"></i></div>
+            <div class="spec">${p.sp[idx]}</div>
+          </div>`).join("")}
+        <div class="total"><span class="total-label">總分</span>
+          <span class="total-num"><span class="tnum">${hold?0:total(p)}</span><span class="denom">/400</span></span></div>
+      </div>
     </div>`;
   if(!hold){
-    requestAnimationFrame(()=>el.querySelectorAll(".bar>i").forEach(b=>{const w=b.style.width;b.style.width="0";requestAnimationFrame(()=>b.style.width=w);}));
+    requestAnimationFrame(()=>stage.querySelectorAll(".bar>i").forEach(b=>{const w=b.style.width;b.style.width="0";requestAnimationFrame(()=>b.style.width=w);}));
   }
 }
 
@@ -548,14 +564,17 @@ async function battle(){
 
   const v=document.getElementById("verdict"); v.classList.remove("show");
   renderCard("A",true); renderCard("B",true);
+  const cardA=document.querySelector("#cardA .card"), cardB=document.querySelector("#cardB .card");
+  if(matchMedia("(hover:none)").matches) enableGyro(); // 手機開陀螺儀傾斜
 
   // 1) 衝撞：雙劍從兩側飛入交擊
   if(soundOn) actx(); // 在使用者手勢內喚醒音訊
   const clash=document.getElementById("clash"); clash.classList.add("go");
   await sleep(820);   // 等雙劍飛到中央撞擊
-  // 撞擊瞬間：金屬碰撞聲 + 螢幕震動 + 大火花
+  // 撞擊瞬間：金屬碰撞聲 + 螢幕震動 + 大火花 + 卡牌 3D 互撞
   metalClang();
   document.getElementById("wrap").classList.add("shake");
+  cardA.classList.add("lunge-a"); cardB.classList.add("lunge-b");
   spawn(innerWidth/2, innerHeight*0.42, 90, ["#fff","#ffe9a8","#ffd24a","#ffa53b","#9cc7ff"], 14);
   await sleep(130);
   explosion();        // 緊接爆炸轟鳴
@@ -563,6 +582,7 @@ async function battle(){
   await sleep(560);
   clash.classList.remove("go");
   document.getElementById("wrap").classList.remove("shake");
+  cardA.classList.remove("lunge-a"); cardB.classList.remove("lunge-b");
   await sleep(150);
 
   // 2) 屬性逐項揭曉
@@ -587,7 +607,7 @@ async function battle(){
   await sleep(250);
 
   // 4) 宣判
-  const ca=document.getElementById("cardA"), cb=document.getElementById("cardB");
+  const ca=cardA, cb=cardB;
   let msg;
   if(ta>tb){
     ca.classList.add("is-winner","glow-on"); cb.classList.add("is-loser");
@@ -672,6 +692,47 @@ const qrModal=document.getElementById("qrModal");
 document.getElementById("qrBtn").addEventListener("click",()=>qrModal.classList.add("open"));
 document.getElementById("qrClose").addEventListener("click",()=>qrModal.classList.remove("open"));
 qrModal.addEventListener("click",e=>{if(e.target===qrModal)qrModal.classList.remove("open");});
+
+// ---- 3D 傾斜：滑鼠移動視差 ----
+["A","B"].forEach(side=>{
+  const stage=document.getElementById("card"+side);
+  stage.addEventListener("pointermove",e=>{
+    const card=stage.querySelector(".card");
+    if(!card||card.classList.contains("empty"))return;
+    const r=stage.getBoundingClientRect();
+    const px=(e.clientX-r.left)/r.width, py=(e.clientY-r.top)/r.height;
+    card.style.setProperty("--tiltY",((px-0.5)*16).toFixed(1)+"deg");
+    card.style.setProperty("--tiltX",((0.5-py)*16).toFixed(1)+"deg");
+    card.style.setProperty("--mx",(px*100).toFixed(0)+"%");
+    card.style.setProperty("--my",(py*100).toFixed(0)+"%");
+  });
+  stage.addEventListener("pointerleave",()=>{
+    const card=stage.querySelector(".card"); if(!card)return;
+    card.style.setProperty("--tiltY","0deg"); card.style.setProperty("--tiltX","0deg");
+  });
+});
+
+// ---- 3D 傾斜：手機陀螺儀（首次對戰時於手勢內請求權限）----
+let gyroOn=false;
+function onGyro(e){
+  const ry=Math.max(-12,Math.min(12,(e.gamma||0)/3));     // 左右傾
+  const rx=Math.max(-12,Math.min(12,((e.beta||0)-45)/4)); // 前後傾
+  document.querySelectorAll(".card-stage .card").forEach(card=>{
+    if(card.classList.contains("empty"))return;
+    card.style.setProperty("--tiltY",ry.toFixed(1)+"deg");
+    card.style.setProperty("--tiltX",(-rx).toFixed(1)+"deg");
+  });
+}
+function enableGyro(){
+  if(gyroOn||typeof DeviceOrientationEvent==="undefined")return;
+  if(typeof DeviceOrientationEvent.requestPermission==="function"){
+    DeviceOrientationEvent.requestPermission().then(s=>{
+      if(s==="granted"){gyroOn=true;addEventListener("deviceorientation",onGyro);}
+    }).catch(()=>{});
+  }else{
+    gyroOn=true;addEventListener("deviceorientation",onGyro);
+  }
+}
 </script>
 </body>
 </html>
