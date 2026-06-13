@@ -181,7 +181,7 @@
   @keyframes popIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
   .qr-box h2{margin:0 0 16px;font-size:18px;font-weight:800}
   .qr-img{background:#fff;padding:14px;border-radius:16px;display:inline-block;line-height:0}
-  .qr-img img{width:min(62vw,230px);height:auto;image-rendering:pixelated}
+  .qr-img img,.qr-img svg{width:min(62vw,230px);height:auto;image-rendering:pixelated}
   .qr-url{margin-top:16px;font-size:15px;font-weight:800;color:var(--accent);word-break:break-all}
   .qr-hint{margin-top:10px;font-size:12.5px;color:var(--muted);line-height:1.6}
   .qr-close{position:absolute;top:10px;right:14px;background:none;border:none;color:var(--muted);
@@ -205,7 +205,8 @@
   <div class="qr-box">
     <button class="qr-close" id="qrClose" aria-label="關閉">×</button>
     <h2>📲 用手機掃碼開玩</h2>
-    <div class="qr-img"><img alt="QR code" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyAQAAAADAX2ykAAABuklEQVR42u2byY3DMAxFiXEBKimtuyQXEMCxuYj0McAMBhSeDkJi/1MePjcpcn61dkGPHj169OjR/5JefG33k2u9zvf94t6OePdS/Y98t9D/r975KrzzmHwvqtenzZ+lBL5N+R5KdSvWFhnOXI0N3zX47sOjslsXvovx1acXZLczfJfKv4b23tTJGbPh05nvrJ8V6GOjfu7P97HekvWVGzv7KX7PpvH5bQ2RPdunkzVSw7e9f6N0zlhsm808Bvm3O1+pXZECtSLL7Bw6+Pbka6E5bWomziYJvs35jojFynKPJsnTsXZK8O1cP3vDm7nW/GtDSuqr9vE5DhT2kScNW0nC+Lf1fCMi8ONdjCazSYJv4/63zJqzXRp15gHfxvm3HAj6aGMGbvrfBfzrs+ZZZMnIwE393N2/3iTlaNJPCk0C3+b+PR5Ui53167zYAd/G/p2kI+FGTW2n//Bt3B9FQ+TzqxxXqrGpn9vXV7V0jiQsUg6R4Ns6/0q9f+WVdBj7xXxyFb41FouU++3wXcO/Z960K9mZ+5OL5N8st+qZIfXVKvVzvbWRlzg4X1il/+X/d+jRo0ePHv3f6z+PyLGV8DMZtAAAAABJRU5ErkJggg=="></div>
+    <div class="qr-img"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 37 37" class="segno"><path fill="#fff" d="M0 0h37v37h-37z"/><path class="qrline" stroke="#000" d="M4 4.5h7m2 0h4m2 0h1m3 0h1m2 0h7m-29 1h1m5 0h1m2 0h4m1 0h2m1 0h2m3 0h1m5 0h1m-29 1h1m1 0h3m1 0h1m9 0h2m4 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h1m1 0h1m2 0h2m2 0h1m3 0h1m1 0h3m1 0h1m-29 1h1m1 0h3m1 0h1m2 0h5m1 0h2m1 0h1m3 0h1m1 0h3m1 0h1m-29 1h1m5 0h1m1 0h2m1 0h3m1 0h1m1 0h1m1 0h2m1 0h1m5 0h1m-29 1h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7m-18 1h1m4 0h2m2 0h1m-21 1h1m2 0h1m1 0h2m1 0h4m1 0h2m1 0h1m1 0h1m1 0h2m1 0h1m-22 1h1m2 0h1m1 0h6m3 0h1m3 0h3m2 0h1m2 0h1m-27 1h2m2 0h2m2 0h1m2 0h1m2 0h2m1 0h1m1 0h3m1 0h3m-27 1h2m1 0h2m2 0h1m4 0h4m2 0h2m1 0h1m3 0h2m-27 1h1m2 0h3m3 0h2m1 0h1m1 0h3m1 0h5m1 0h1m1 0h2m-26 1h1m1 0h1m1 0h1m1 0h1m2 0h1m3 0h1m2 0h3m-21 1h3m1 0h2m2 0h1m4 0h1m2 0h2m1 0h2m1 0h1m1 0h4m-29 1h2m1 0h2m3 0h11m1 0h3m1 0h2m1 0h1m-28 1h1m2 0h1m2 0h1m1 0h3m1 0h1m1 0h1m2 0h1m1 0h3m5 0h1m-25 1h3m4 0h1m1 0h1m1 0h1m1 0h2m3 0h3m1 0h1m2 0h1m-29 1h1m2 0h2m1 0h4m1 0h1m1 0h1m2 0h2m2 0h2m1 0h2m2 0h2m-24 1h1m3 0h2m1 0h1m1 0h1m2 0h7m3 0h2m-29 1h1m1 0h1m1 0h1m1 0h1m2 0h4m2 0h2m1 0h7m1 0h1m-19 1h1m1 0h1m2 0h1m2 0h1m2 0h2m3 0h1m1 0h3m-29 1h7m3 0h2m1 0h2m1 0h2m2 0h1m1 0h1m1 0h1m2 0h1m-28 1h1m5 0h1m1 0h1m1 0h1m2 0h2m1 0h1m1 0h3m3 0h3m-27 1h1m1 0h3m1 0h1m2 0h4m1 0h4m2 0h5m-25 1h1m1 0h3m1 0h1m1 0h1m2 0h1m5 0h3m2 0h6m-28 1h1m1 0h3m1 0h1m7 0h1m1 0h4m4 0h3m1 0h1m-29 1h1m5 0h1m5 0h4m1 0h1m2 0h3m4 0h1m-28 1h7m1 0h2m1 0h1m1 0h3m1 0h1m2 0h2m1 0h1m1 0h1m1 0h1"/></svg>
+</div>
     <div class="qr-url">mansonliu.github.io/phone-battle</div>
     <div class="qr-hint">任何網路、任何手機都能掃，相機對準即可。</div>
   </div>
